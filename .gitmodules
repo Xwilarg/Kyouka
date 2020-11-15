@@ -1,0 +1,3 @@
+[submodule "Kyouka/Discord-Utils"]
+	path = Kyouka/Discord-Utils
+	url = https://github.com/Xwilarg/Discord-Utils

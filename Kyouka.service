@@ -1,0 +1,11 @@
+[Unit]
+Description=Kyouka
+After=network-online.target rethinkdb.target
+
+[Service]
+ExecStart=dotnet /home/zirk/bots/Kyouka/Kyouka.dll
+WorkingDirectory=/home/zirk/bots/Kyouka
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
