@@ -41,6 +41,8 @@ namespace Kyouka
             P = this;
 
             await _commands.AddModuleAsync<Communication>(null);
+            await _commands.AddModuleAsync<Score>(null);
+            await _commands.AddModuleAsync<Debug>(null);
 
             Client.MessageReceived += HandleCommandAsync;
 
