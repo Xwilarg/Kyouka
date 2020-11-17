@@ -2,6 +2,7 @@
 using RethinkDb.Driver;
 using RethinkDb.Driver.Net;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Kyouka.Database
@@ -54,6 +55,11 @@ namespace Kyouka.Database
         public async Task<string> DumpAsync(string name)
         {
             return (await _r.Db(_dbName).Table("Scores").Get(name).RunAsync(_conn)).ToString();
+        }
+
+        public async Task<(string, Score)[]> GetScoresAsync()
+        {
+            return _scores.Select(x => (x.Key, x.Value)).ToArray();
         }
 
         public Dictionary<string, Score> _scores;

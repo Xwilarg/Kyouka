@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Kyouka.Impl;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Kyouka.Module
@@ -29,6 +30,19 @@ namespace Kyouka.Module
                 await StaticObjects.Db.AddPlayerAsync(name, user.Id.ToString(), value);
                 await ReplyAsync("This score was added.");
             }
+        }
+
+        [Command("Score")]
+        public async Task GetScore()
+        {
+            var scores = await StaticObjects.Db.GetScoresAsync();
+            await ReplyAsync(embed: new EmbedBuilder
+            {
+                Description = string.Join("\n\n", scores.Select(x =>
+                {
+                    return x.Item1 + "\n" + string.Join("\n", x.Item2.Scores.Select(y => Context.Guild.GetUserAsync(ulong.Parse(y.Item1)).GetAwaiter().GetResult().ToString() + ": " + y.Item2));
+                }))
+            }.Build());
         }
     }
 }
