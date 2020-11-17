@@ -41,6 +41,16 @@ namespace Kyouka.Database
             await _r.Db(_dbName).Table("Scores").Insert(score).RunAsync(_conn);
         }
 
+        public async Task AddPlayerAsync(string name, string player, int value)
+        {
+            var score = _scores[name];
+
+            score.Scores.Add((player, value));
+            await _r.Db(_dbName).Table("Scores").Update(_r.HashMap("id", name)
+                .With("Scores", score.Scores)
+            ).RunAsync(_conn);
+        }
+
         public async Task<string> DumpAsync(string name)
         {
             return (await _r.Db(_dbName).Table("Scores").Get(name).RunAsync(_conn)).ToString();

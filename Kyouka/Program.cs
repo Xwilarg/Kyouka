@@ -45,12 +45,23 @@ namespace Kyouka
             await _commands.AddModuleAsync<Debug>(null);
 
             Client.MessageReceived += HandleCommandAsync;
+            Client.GuildAvailable += GuildAvailable;
 
             StartTime = DateTime.Now;
             await Client.LoginAsync(TokenType.Bot, json["botToken"].Value<string>());
             await Client.StartAsync();
 
             await Task.Delay(-1);
+        }
+
+        private async Task GuildAvailable(SocketGuild g)
+        {
+            _ = Task.Run(async () =>
+            {
+                Console.WriteLine("Downloading users");
+                await g.DownloadUsersAsync();
+                Console.WriteLine("Done downloading users");
+            });
         }
 
         private async Task HandleCommandAsync(SocketMessage arg)
@@ -61,7 +72,11 @@ namespace Kyouka
             if (msg.HasMentionPrefix(Client.CurrentUser, ref pos) || msg.HasStringPrefix("k.", ref pos))
             {
                 SocketCommandContext context = new SocketCommandContext(Client, msg);
-                await _commands.ExecuteAsync(context, pos, null);
+                var result = await _commands.ExecuteAsync(context, pos, null);
+                if (!result.IsSuccess)
+                {
+                    Console.WriteLine(result.Error.ToString() + ": " + result.ErrorReason);
+                }
             }
         }
     }

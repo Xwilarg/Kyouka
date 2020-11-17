@@ -12,7 +12,7 @@ namespace Kyouka.Impl
 
         public string id;
 
-        public List<(string, int)> Scores;
+        public List<(string, int)> Scores = new List<(string, int)>();
 
         public ScoreType Type;
     }
