@@ -1,6 +1,7 @@
 ﻿using Kyouka.Impl;
 using RethinkDb.Driver;
 using RethinkDb.Driver.Net;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -22,11 +23,35 @@ namespace Kyouka.Database
                 _r.DbCreate(_dbName).Run(_conn);
             if (!await _r.Db(_dbName).TableList().Contains("Scores").RunAsync<bool>(_conn))
                 _r.Db(_dbName).TableCreate("Scores").Run(_conn);
+            if (!await _r.Db(_dbName).TableList().Contains("Users").RunAsync<bool>(_conn))
+                _r.Db(_dbName).TableCreate("Users").Run(_conn);
 
             _scores = new Dictionary<string, Score>();
             var tmp = (Cursor<Score>)await _r.Db(_dbName).Table("Scores").RunAsync<Score>(_conn);
             while (tmp.MoveNext())
                 _scores.Add(tmp.Current.id, tmp.Current);
+        }
+
+        public async Task AddMessageAsync(string user)
+        {
+            if (await _r.Db(_dbName).Table("Users").GetAll(user).Count().Eq(0).RunAsync<bool>(_conn))
+                await _r.Db(_dbName).Table("Users").Insert(_r.HashMap("id", user)
+                    .With("LastMessage", DateTime.Now)
+                ).RunAsync(_conn);
+            else
+                await _r.Db(_dbName).Table("Users").Update(_r.HashMap("id", user)
+                    .With("LastMessage", DateTime.Now)
+                ).RunAsync(_conn);
+        }
+
+        public async Task<User[]> GetUsersAsync()
+        {
+            var tmp = (Cursor<User>)await _r.Db(_dbName).Table("Users").RunAsync<User>(_conn);
+            var users = new List<User>();
+            while (tmp.MoveNext())
+                users.Add(tmp.Current);
+            return users.ToArray();
+
         }
 
         public bool DoesScoreExists(string name)
@@ -57,7 +82,7 @@ namespace Kyouka.Database
             return (await _r.Db(_dbName).Table("Scores").Get(name).RunAsync(_conn)).ToString();
         }
 
-        public async Task<(string, Score)[]> GetScoresAsync()
+        public (string, Score)[] GetScores()
         {
             return _scores.Select(x => (x.Key, x.Value)).ToArray();
         }

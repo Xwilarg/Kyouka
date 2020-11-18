@@ -35,7 +35,7 @@ namespace Kyouka.Module
         [Command("Score")]
         public async Task GetScore()
         {
-            var scores = await StaticObjects.Db.GetScoresAsync();
+            var scores = StaticObjects.Db.GetScores();
             await ReplyAsync(embed: new EmbedBuilder
             {
                 Description = string.Join("\n\n", scores.Select(x =>

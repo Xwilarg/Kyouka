@@ -8,6 +8,10 @@ using Kyouka.Module;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using RethinkDb.Driver.Ast;
+using System.Threading;
+using System.Runtime.CompilerServices;
+using System.Linq;
 
 namespace Kyouka
 {
@@ -35,10 +39,12 @@ namespace Kyouka
         private async Task MainAsync()
         {
             var json = JsonConvert.DeserializeObject<JObject>(File.ReadAllText("Keys/Credentials.json"));
-            if (json["botToken"] == null)
+            if (json["botToken"] == null || json["regularRoleId"] == null)
                 throw new NullReferenceException("Invalid Credentials file");
 
             P = this;
+
+            regularRoleId = ulong.Parse(json["regularRoleId"].Value<string>());
 
             await _commands.AddModuleAsync<Communication>(null);
             await _commands.AddModuleAsync<Score>(null);
@@ -46,12 +52,36 @@ namespace Kyouka
 
             Client.MessageReceived += HandleCommandAsync;
             Client.GuildAvailable += GuildAvailable;
+            Client.Connected += Connected;
 
             StartTime = DateTime.Now;
             await Client.LoginAsync(TokenType.Bot, json["botToken"].Value<string>());
             await Client.StartAsync();
 
             await Task.Delay(-1);
+        }
+
+        Timer checkTimer;
+
+        private async Task Connected()
+        {
+            checkTimer = new Timer(new TimerCallback(CheckRole), null, 0, 60 * 60 * 1000); // Called every hour
+        }
+
+        private ulong regularRoleId;
+        private void CheckRole(object? _)
+        {
+            var users = StaticObjects.Db.GetUsersAsync().GetAwaiter().GetResult();
+            var g = Client.Guilds.ElementAt(0); // Kyouka should only be in one guild anyway
+            g.DownloadUsersAsync().GetAwaiter().GetResult();
+            foreach (var user in g.Users)
+            {
+                if (!user.Roles.Any(x => x.Id == regularRoleId))
+                    continue;
+                var value = users.FirstOrDefault(x => x.id == user.Id.ToString());
+                if (value == null || value.LastMessage.AddDays(3) < DateTime.Now)
+                    user.RemoveRoleAsync(user.Guild.GetRole(regularRoleId)).GetAwaiter().GetResult();
+            }
         }
 
         private async Task GuildAvailable(SocketGuild g)
@@ -67,9 +97,9 @@ namespace Kyouka
         private async Task HandleCommandAsync(SocketMessage arg)
         {
             SocketUserMessage msg = arg as SocketUserMessage;
-            if (msg == null || arg.Author.IsBot) return;
+            if (msg == null) return;
             int pos = 0;
-            if (msg.HasMentionPrefix(Client.CurrentUser, ref pos) || msg.HasStringPrefix("k.", ref pos))
+            if (!arg.Author.IsBot && (msg.HasMentionPrefix(Client.CurrentUser, ref pos) || msg.HasStringPrefix("k.", ref pos)))
             {
                 SocketCommandContext context = new SocketCommandContext(Client, msg);
                 var result = await _commands.ExecuteAsync(context, pos, null);
@@ -77,6 +107,12 @@ namespace Kyouka
                 {
                     Console.WriteLine(result.Error.ToString() + ": " + result.ErrorReason);
                 }
+            }
+            if (msg.Author is IGuildUser guildUser)
+            {
+                await StaticObjects.Db.AddMessageAsync(msg.Author.Id.ToString());
+                if (!guildUser.RoleIds.Contains(regularRoleId))
+                    await guildUser.AddRoleAsync(guildUser.Guild.GetRole(regularRoleId));
             }
         }
     }
