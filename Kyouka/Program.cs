@@ -8,9 +8,7 @@ using Kyouka.Module;
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using RethinkDb.Driver.Ast;
 using System.Threading;
-using System.Runtime.CompilerServices;
 using System.Linq;
 
 namespace Kyouka

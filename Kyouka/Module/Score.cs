@@ -40,9 +40,17 @@ namespace Kyouka.Module
             {
                 Description = string.Join("\n\n", scores.Select(x =>
                 {
-                    return x.Item1 + "\n" + string.Join("\n", x.Item2.Scores.Select(y => Context.Guild.GetUserAsync(ulong.Parse(y.Item1)).GetAwaiter().GetResult().ToString() + ": " + y.Item2));
+                    return "**" + x.Item1 + "**\n" + string.Join("\n", Order(x.Item2).Select(y => Context.Guild.GetUserAsync(ulong.Parse(y.Item1)).GetAwaiter().GetResult().ToString() + ": " + y.Item2));
                 }))
             }.Build());
+        }
+
+        private IOrderedEnumerable<(string, int)> Order(Impl.Score score)
+        {
+            if (score.Type == ScoreType.Best)
+                return score.Scores.OrderByDescending(x => x.Item2);
+            return score.Scores.OrderBy(x => x.Item2);
+
         }
     }
 }
