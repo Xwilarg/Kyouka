@@ -25,11 +25,46 @@ namespace Kyouka.Database
                 _r.Db(_dbName).TableCreate("Scores").Run(_conn);
             if (!await _r.Db(_dbName).TableList().Contains("Users").RunAsync<bool>(_conn))
                 _r.Db(_dbName).TableCreate("Users").Run(_conn);
+            if (!await _r.Db(_dbName).TableList().Contains("Reddit").RunAsync<bool>(_conn))
+                _r.Db(_dbName).TableCreate("Reddit").Run(_conn);
 
             _scores = new Dictionary<string, Score>();
             var tmp = (Cursor<Score>)await _r.Db(_dbName).Table("Scores").RunAsync<Score>(_conn);
             while (tmp.MoveNext())
                 _scores.Add(tmp.Current.id, tmp.Current);
+
+            _subreddits = new Dictionary<string, Subreddit>();
+            var tmp2 = (Cursor<Subreddit>)await _r.Db(_dbName).Table("Reddit").RunAsync<Subreddit>(_conn);
+            while (tmp2.MoveNext())
+                _subreddits.Add(tmp2.Current.id, tmp2.Current);
+        }
+
+        public async Task<string> GetSubredditAsync(string name)
+        {
+            if (_subreddits.ContainsKey(name))
+                return _subreddits[name].Last;
+            return null;
+        }
+
+        public async Task SaveSubredditAsync(string name, string last)
+        {
+            if (_subreddits.ContainsKey(name))
+            {
+                _subreddits[name].Last = last;
+                await _r.Db(_dbName).Table("Reddit").Update(_r.HashMap("id", name)
+                    .With("Last", last)
+                ).RunAsync(_conn);
+            }
+            else
+            {
+                Subreddit sub = new Subreddit
+                {
+                    id = name,
+                    Last = last
+                };
+                _subreddits.Add(name, sub);
+                await _r.Db(_dbName).Table("Reddit").Insert(sub).RunAsync(_conn);
+            }
         }
 
         public async Task AddMessageAsync(string user)
@@ -51,7 +86,6 @@ namespace Kyouka.Database
             while (tmp.MoveNext())
                 users.Add(tmp.Current);
             return users.ToArray();
-
         }
 
         public bool DoesScoreExists(string name)
@@ -88,6 +122,7 @@ namespace Kyouka.Database
         }
 
         public Dictionary<string, Score> _scores;
+        public Dictionary<string, Subreddit> _subreddits;
 
         private RethinkDB _r;
         private Connection _conn;

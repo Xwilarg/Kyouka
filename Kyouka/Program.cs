@@ -10,6 +10,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace Kyouka
 {
@@ -59,11 +60,12 @@ namespace Kyouka
             await Task.Delay(-1);
         }
 
-        Timer checkTimer;
+        Timer checkTimer, redditTimer;
 
         private async Task Connected()
         {
             checkTimer = new Timer(new TimerCallback(CheckRole), null, 0, 60 * 60 * 1000); // Called every hour
+            redditTimer = new Timer(new TimerCallback(CheckSubreddit), null, 0, 600000); // Called every 10 minutes
         }
 
         private ulong regularRoleId;
@@ -79,6 +81,82 @@ namespace Kyouka
                 var value = users.FirstOrDefault(x => x.id == user.Id.ToString());
                 if (value == null || value.LastMessage.AddDays(3) < DateTime.Now)
                     user.RemoveRoleAsync(user.Guild.GetRole(regularRoleId)).GetAwaiter().GetResult();
+            }
+        }
+
+        private Dictionary<string, ulong> _subreddits = new Dictionary<string, ulong>
+        {
+            { "angryupvote", 782358498473148478 },
+            { "aww", 782358954415226920 },
+            { "kdrama", 782358994592858132 },
+            { "koreanvariety", 782359043373137960 },
+            { "kpop", 782359132304572426 },
+            { "rareinsults", 782359169487470672 },
+            { "suspiciouslyspecific", 782359214415675402 },
+            { "tumblr", 782359259391197214 }
+        };
+
+        private void CheckSubreddit(object? _)
+        {
+            foreach (var sub in _subreddits)
+            {
+                try
+                {
+                    var html = StaticObjects.Client.GetStringAsync("https://api.reddit.com/r/" + sub.Key + "/hot").GetAwaiter().GetResult();
+                    var json = JsonConvert.DeserializeObject<JObject>(html)["data"]["children"].Value<JArray>();
+
+                    var last = StaticObjects.Db.GetSubredditAsync(sub.Key).GetAwaiter().GetResult();
+                    var first = json[0]["data"]["name"].Value<string>();
+                    if (first == last)
+                        continue;
+
+                    var g = Client.Guilds.ElementAt(0);
+                    var chan = g.GetTextChannel(sub.Value);
+                    StaticObjects.Db.SaveSubredditAsync(sub.Key, first).GetAwaiter().GetResult();
+
+                    foreach (var elem in json)
+                    {
+                        var data = elem["data"];
+
+                        if (data["stickied"].Value<bool>())
+                            continue;
+
+                        if (data["name"].Value<string>() == last)
+                            break;
+
+                        var embed = new EmbedBuilder()
+                        {
+                            Title = data["title"].Value<string>(),
+                            Color = data["over_18"].Value<bool>() ? Color.Red : Color.Green,
+                            Url = "https://reddit.com" + data["permalink"].Value<string>()
+                        };
+                        if (data["spoiler"].Value<bool>())
+                        {
+                            embed.Description = "Post is marked as spoiler";
+                        }
+                        else
+                        {
+                            string preview = data["url"].Value<string>();
+                            if (!Utils.IsImage(preview.Split('.').Last()))
+                                preview = data["thumbnail"].Value<string>();
+                            embed.ImageUrl = !Uri.IsWellFormedUriString(preview, UriKind.Absolute) ? null : preview;
+                            var selfText = data["selftext"];
+                            if (selfText != null)
+                                embed.Description = selfText.Value<string>().Length > 2048 ? selfText.Value<string>().Substring(0, 2048) : selfText.Value<string>();
+                            embed.Footer = new EmbedFooterBuilder
+                            {
+                                Text = data["link_flair_text"].Value<string>()
+                            };
+                        }
+                        chan.SendMessageAsync(embed: embed.Build()).GetAwaiter().GetResult();
+                    }
+
+
+                }
+                catch (Exception e)
+                {
+                    Utils.LogErrorAsync(new LogMessage(LogSeverity.Error, e.Source, e.Message, e)).GetAwaiter().GetResult();
+                }
             }
         }
 
