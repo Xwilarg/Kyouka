@@ -86,14 +86,21 @@ namespace Kyouka
 
         private Dictionary<string, ulong> _subreddits = new Dictionary<string, ulong>
         {
-            { "angryupvote", 782358498473148478 },
-            { "aww", 782358954415226920 },
+            //{ "0sanitymemes", 782380305364942858 },
+            //{ "angryupvote", 782358498473148478 },
+            { "arknights", 782413766146785280 },
+            /*{ "aww", 782358954415226920 },
+            { "blursedimages", 782360282399244288 },
+            { "france", 782363025574723585 },
             { "kdrama", 782358994592858132 },
-            { "koreanvariety", 782359043373137960 },
-            { "kpop", 782359132304572426 },
-            { "rareinsults", 782359169487470672 },
+            { "koreanvariety", 782359043373137960 },*/
+            { "kpop", 782413900367790091 },
+            /*{ "rareinsults", 782359169487470672 },
             { "suspiciouslyspecific", 782359214415675402 },
-            { "tumblr", 782359259391197214 }
+            { "tumblr", 782359259391197214 },
+            { "yuriknights", 782363461949587532 },
+            { "wholesomehentai", 782364642437627915 },
+            { "wholesomeyuri", 782363882169434143 }*/
         };
 
         private void CheckSubreddit(object? _)
@@ -106,13 +113,11 @@ namespace Kyouka
                     var json = JsonConvert.DeserializeObject<JObject>(html)["data"]["children"].Value<JArray>();
 
                     var last = StaticObjects.Db.GetSubredditAsync(sub.Key).GetAwaiter().GetResult();
-                    var first = json[0]["data"]["name"].Value<string>();
-                    if (first == last)
-                        continue;
 
                     var g = Client.Guilds.ElementAt(0);
                     var chan = g.GetTextChannel(sub.Value);
-                    StaticObjects.Db.SaveSubredditAsync(sub.Key, first).GetAwaiter().GetResult();
+
+                    bool didSetLast = false;
 
                     foreach (var elem in json)
                     {
@@ -123,6 +128,12 @@ namespace Kyouka
 
                         if (data["name"].Value<string>() == last)
                             break;
+
+                        if (!didSetLast)
+                        {
+                            didSetLast = true;
+                            StaticObjects.Db.SaveSubredditAsync(sub.Key, data["name"].Value<string>()).GetAwaiter().GetResult();
+                        }
 
                         var embed = new EmbedBuilder()
                         {
