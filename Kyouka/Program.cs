@@ -86,21 +86,21 @@ namespace Kyouka
 
         private Dictionary<string, ulong> _subreddits = new Dictionary<string, ulong>
         {
-            //{ "0sanitymemes", 782380305364942858 },
-            //{ "angryupvote", 782358498473148478 },
+            { "0sanitymemes", 782542380670648320 },
+            { "angryupvote", 782542455479205889 },
             { "arknights", 782413766146785280 },
-            /*{ "aww", 782358954415226920 },
-            { "blursedimages", 782360282399244288 },
-            { "france", 782363025574723585 },
-            { "kdrama", 782358994592858132 },
-            { "koreanvariety", 782359043373137960 },*/
+            { "aww", 782542535322894336 },
+            { "blursedimages", 782542694580224030 },
+            { "france", 782542756077764628 },
+            { "kdrama", 782542808354521129 },
+            { "koreanvariety", 782542862234943528 },
             { "kpop", 782413900367790091 },
-            /*{ "rareinsults", 782359169487470672 },
-            { "suspiciouslyspecific", 782359214415675402 },
-            { "tumblr", 782359259391197214 },
-            { "yuriknights", 782363461949587532 },
-            { "wholesomehentai", 782364642437627915 },
-            { "wholesomeyuri", 782363882169434143 }*/
+            { "rareinsults", 782542929440931850 },
+            { "suspiciouslyspecific", 782542972817637396 },
+            { "tumblr", 782543018598203442 },
+            { "yuriknights", 782543062802497536 },
+            { "wholesomehentai", 782543100462497793 },
+            { "wholesomeyuri", 782543136853196801 }
         };
 
         private void CheckSubreddit(object? _)
