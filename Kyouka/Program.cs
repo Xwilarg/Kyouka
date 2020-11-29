@@ -38,12 +38,10 @@ namespace Kyouka
         private async Task MainAsync()
         {
             var json = JsonConvert.DeserializeObject<JObject>(File.ReadAllText("Keys/Credentials.json"));
-            if (json["botToken"] == null || json["regularRoleId"] == null)
+            if (json["botToken"] == null)
                 throw new NullReferenceException("Invalid Credentials file");
 
             P = this;
-
-            regularRoleId = ulong.Parse(json["regularRoleId"].Value<string>());
 
             await _commands.AddModuleAsync<Communication>(null);
             await _commands.AddModuleAsync<Score>(null);
@@ -68,7 +66,8 @@ namespace Kyouka
             redditTimer = new Timer(new TimerCallback(CheckSubreddit), null, 0, 600000); // Called every 10 minutes
         }
 
-        private ulong regularRoleId;
+        private ulong regularRoleId = 692377699402121277;
+        private ulong memberRoleId = 599014750306828318;
         private void CheckRole(object? _)
         {
             var users = StaticObjects.Db.GetUsersAsync().GetAwaiter().GetResult();
@@ -198,7 +197,7 @@ namespace Kyouka
             if (msg.Author is IGuildUser guildUser)
             {
                 await StaticObjects.Db.AddMessageAsync(msg.Author.Id.ToString());
-                if (!guildUser.RoleIds.Contains(regularRoleId))
+                if (!guildUser.RoleIds.Contains(regularRoleId) && guildUser.RoleIds.Contains(memberRoleId))
                     await guildUser.AddRoleAsync(guildUser.Guild.GetRole(regularRoleId));
             }
         }
