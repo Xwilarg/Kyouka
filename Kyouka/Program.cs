@@ -111,7 +111,7 @@ namespace Kyouka
                     var html = StaticObjects.Client.GetStringAsync("https://api.reddit.com/r/" + sub.Key + "/hot").GetAwaiter().GetResult();
                     var json = JsonConvert.DeserializeObject<JObject>(html)["data"]["children"].Value<JArray>();
 
-                    var last = StaticObjects.Db.GetSubredditAsync(sub.Key).GetAwaiter().GetResult();
+                    var lasts = StaticObjects.Db.GetSubredditAsync(sub.Key).GetAwaiter().GetResult();
 
                     var g = Client.Guilds.ElementAt(0);
                     var chan = g.GetTextChannel(sub.Value);
@@ -125,8 +125,8 @@ namespace Kyouka
                         if (data["stickied"].Value<bool>())
                             continue;
 
-                        if (data["name"].Value<string>() == last)
-                            break;
+                        if (lasts.Contains(data["name"].Value<string>()))
+                            continue;
 
                         if (!didSetLast)
                         {

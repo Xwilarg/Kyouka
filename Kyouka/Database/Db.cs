@@ -39,10 +39,10 @@ namespace Kyouka.Database
                 _subreddits.Add(tmp2.Current.id, tmp2.Current);
         }
 
-        public async Task<string> GetSubredditAsync(string name)
+        public async Task<List<string>> GetSubredditAsync(string name)
         {
             if (_subreddits.ContainsKey(name))
-                return _subreddits[name].Last;
+                return _subreddits[name].Lasts;
             return null;
         }
 
@@ -50,9 +50,10 @@ namespace Kyouka.Database
         {
             if (_subreddits.ContainsKey(name))
             {
-                _subreddits[name].Last = last;
+                var sub = _subreddits[name];
+                sub.AddLast(last);
                 await _r.Db(_dbName).Table("Reddit").Update(_r.HashMap("id", name)
-                    .With("Last", last)
+                    .With("Lasts", sub.Lasts)
                 ).RunAsync(_conn);
             }
             else
@@ -60,7 +61,7 @@ namespace Kyouka.Database
                 Subreddit sub = new Subreddit
                 {
                     id = name,
-                    Last = last
+                    Lasts = new List<string> { last }
                 };
                 _subreddits.Add(name, sub);
                 await _r.Db(_dbName).Table("Reddit").Insert(sub).RunAsync(_conn);
