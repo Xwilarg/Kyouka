@@ -43,7 +43,7 @@ namespace Kyouka.Database
         {
             if (_subreddits.ContainsKey(name))
                 return _subreddits[name].Lasts;
-            return null;
+            return new List<string>();
         }
 
         public async Task SaveSubredditAsync(string name, string last)
