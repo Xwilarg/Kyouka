@@ -116,8 +116,6 @@ namespace Kyouka
                     var g = Client.Guilds.ElementAt(0);
                     var chan = g.GetTextChannel(sub.Value);
 
-                    bool didSetLast = false;
-
                     foreach (var elem in json)
                     {
                         var data = elem["data"];
@@ -128,11 +126,7 @@ namespace Kyouka
                         if (lasts.Contains(data["name"].Value<string>()))
                             continue;
 
-                        if (!didSetLast)
-                        {
-                            didSetLast = true;
-                            StaticObjects.Db.SaveSubredditAsync(sub.Key, data["name"].Value<string>()).GetAwaiter().GetResult();
-                        }
+                        StaticObjects.Db.SaveSubredditAsync(sub.Key, data["name"].Value<string>()).GetAwaiter().GetResult();
 
                         var embed = new EmbedBuilder()
                         {
