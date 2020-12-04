@@ -89,18 +89,28 @@ namespace Kyouka
             { "angryupvote", 782542455479205889 },
             { "arknights", 782413766146785280 },
             { "aww", 782542535322894336 },
+            { "blackmagicfuckery", 784432035456221184 },
             { "blursedimages", 782542694580224030 },
+            { "brandnewsentence", 784432098878029824 },
             { "coolguides", 783754079570231337 },
             { "dndmemes", 783754150055641128 },
+            { "earthporn", 784432361017573426 },
             { "france", 782542756077764628 },
             { "gamephysics", 783754211795533876 },
+            { "gamingdetails", 784432512495124511 },
+            { "hmmm", 784433980249735168 },
             { "kdrama", 782542808354521129 },
             { "koreanvariety", 782542862234943528 },
             { "kpop", 782413900367790091 },
+            { "music", 784432661225537556 },
+            { "nextfuckinglevel", 784434309121310720 },
+            { "programmerhumor", 784433512362016860 },
             { "rainbow6", 783754266644840538 },
             { "rance", 783754331554840616 },
             { "rareinsults", 782542929440931850 },
+            { "showerthoughts", 784432835880026113 },
             { "suspiciouslyspecific", 782542972817637396 },
+            { "technicallythetruth", 784433010048630804 },
             { "tumblr", 782543018598203442 },
             { "yuriknights", 782543062802497536 },
             { "wholesomehentai", 782543100462497793 },
@@ -133,11 +143,16 @@ namespace Kyouka
 
                         StaticObjects.Db.SaveSubredditAsync(sub.Key, data["name"].Value<string>()).GetAwaiter().GetResult();
 
+                        string title = data["title"].Value<string>();
                         var embed = new EmbedBuilder()
                         {
-                            Title = data["title"].Value<string>(),
+                            Title = title.Length > 256 ? title.Substring(0, 256) : title,
                             Color = data["over_18"].Value<bool>() ? Color.Red : Color.Green,
-                            Url = "https://reddit.com" + data["permalink"].Value<string>()
+                            Url = "https://reddit.com" + data["permalink"].Value<string>(),
+                            Footer = new EmbedFooterBuilder
+                            {
+                                Text = data["link_flair_text"].Value<string>()
+                            }
                         };
                         if (data["spoiler"].Value<bool>())
                         {
@@ -152,10 +167,6 @@ namespace Kyouka
                             var selfText = data["selftext"];
                             if (selfText != null)
                                 embed.Description = selfText.Value<string>().Length > 2048 ? selfText.Value<string>().Substring(0, 2048) : selfText.Value<string>();
-                            embed.Footer = new EmbedFooterBuilder
-                            {
-                                Text = data["link_flair_text"].Value<string>()
-                            };
                         }
                         chan.SendMessageAsync(embed: embed.Build()).GetAwaiter().GetResult();
                     }
