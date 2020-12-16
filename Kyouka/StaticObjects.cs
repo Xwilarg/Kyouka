@@ -1,4 +1,5 @@
 ﻿using Kyouka.Database;
+using System;
 using System.Net.Http;
 
 namespace Kyouka
@@ -7,6 +8,7 @@ namespace Kyouka
     {
         public static Db Db { get; }
         public static HttpClient Client { get; } = new HttpClient();
+        public static Random Rand { get; } = new Random();
 
         static StaticObjects()
         {

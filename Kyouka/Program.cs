@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Linq;
 using System.Collections.Generic;
+using System.Web;
 
 namespace Kyouka
 {
@@ -24,6 +25,8 @@ namespace Kyouka
 
         public static Program P;
         public DateTime StartTime { private set; get; }
+
+        private Dictionary<int, (string, string)[]> _jlpt;
 
         private Program()
         {
@@ -41,6 +44,16 @@ namespace Kyouka
             if (json["botToken"] == null)
                 throw new NullReferenceException("Invalid Credentials file");
 
+            _jlpt = new Dictionary<int, (string, string)[]>();
+            for (int i = 1; i <= 5; i++)
+            {
+                var full = File.ReadAllLines("Data/Jlpt" + i + "Vocabulary.txt");
+                _jlpt.Add(i, full.Select((x) =>
+                {
+                    var split = x.Split('$').ToArray();
+                    return (split[0], split[1]);
+                }).ToArray());
+            }
             P = this;
 
             await _commands.AddModuleAsync<Communication>(null);
@@ -59,15 +72,67 @@ namespace Kyouka
         }
 
         Timer checkTimer, redditTimer;
+        Timer japaneseTimer;
 
         private async Task Connected()
         {
             checkTimer = new Timer(new TimerCallback(CheckRole), null, 0, 60 * 60 * 1000); // Called every hour
             redditTimer = new Timer(new TimerCallback(CheckSubreddit), null, 0, 600000); // Called every 10 minutes
+            japaneseTimer = new Timer(new TimerCallback(PostJapanese), null, 0, 60 * 60 * 1000); // Called every hour
         }
 
         private ulong regularRoleId = 692377699402121277;
         private ulong memberRoleId = 599014750306828318;
+        private ulong japaneseChannel = 788851808382353488;
+        private void PostJapanese(object? _)
+        {
+            if (StaticObjects.Db.CanPostJapanese())
+            {
+                var nb = StaticObjects.Rand.Next(100);
+                int jlpt;
+                if (nb < 50) jlpt = 5;
+                else if (nb < 25) jlpt = 4;
+                else if (nb < 15) jlpt = 3;
+                else if (nb < 10) jlpt = 2;
+                else jlpt = 1;
+
+                var content = _jlpt[jlpt];
+                var randomLine = content[StaticObjects.Rand.Next(content.Length)];
+
+                JObject json = JsonConvert.DeserializeObject<JObject>(StaticObjects.Client.GetStringAsync("http://jisho.org/api/v1/search/words?keyword="
+                + HttpUtility.UrlEncode(randomLine.Item1)).GetAwaiter().GetResult());
+                var data = ((JArray)json["data"]).Select(x => x).ToArray()[0];
+
+                var g = Client.Guilds.ElementAt(0);
+                var chan = g.GetTextChannel(japaneseChannel);
+
+                var slug = data["slug"].Value<string>();
+                var list = new List<EmbedFieldBuilder>();
+                if (randomLine.Item1 != slug)
+                    list.Add(new EmbedFieldBuilder
+                    {
+                        Name = "Kanji",
+                        Value = slug,
+                        IsInline = true
+                    });
+                list.Add(new EmbedFieldBuilder
+                {
+                    Name = "JLPT Level",
+                    Value = jlpt,
+                    IsInline = true
+                });
+                chan.SendMessageAsync(embed: new EmbedBuilder
+                {
+                    Color = Color.Blue,
+                    Title = randomLine.Item1,
+                    Description = randomLine.Item2,
+                    Fields = list
+                }.Build());
+
+                StaticObjects.Db.UpdatePostJapaneseAsync().GetAwaiter().GetResult();
+            }
+        }
+
         private void CheckRole(object? _)
         {
             var users = StaticObjects.Db.GetUsersAsync().GetAwaiter().GetResult();

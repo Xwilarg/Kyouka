@@ -27,6 +27,8 @@ namespace Kyouka.Database
                 _r.Db(_dbName).TableCreate("Users").Run(_conn);
             if (!await _r.Db(_dbName).TableList().Contains("Reddit").RunAsync<bool>(_conn))
                 _r.Db(_dbName).TableCreate("Reddit").Run(_conn);
+            if (!await _r.Db(_dbName).TableList().Contains("Japanese").RunAsync<bool>(_conn))
+                _r.Db(_dbName).TableCreate("Japanese").Run(_conn);
 
             _scores = new Dictionary<string, Score>();
             var tmp = (Cursor<Score>)await _r.Db(_dbName).Table("Scores").RunAsync<Score>(_conn);
@@ -37,6 +39,29 @@ namespace Kyouka.Database
             var tmp2 = (Cursor<Subreddit>)await _r.Db(_dbName).Table("Reddit").RunAsync<Subreddit>(_conn);
             while (tmp2.MoveNext())
                 _subreddits.Add(tmp2.Current.id, tmp2.Current);
+
+            if (await _r.Db(_dbName).Table("Japanese").GetAll("base").Count().Eq(0).RunAsync<bool>(_conn))
+            {
+                _lastJapanese = DateTime.MinValue;
+                await _r.Db(_dbName).Table("Japanese").Insert(_r.HashMap("id", "base")
+                    .With("Last", DateTime.MinValue)
+                ).RunAsync(_conn);
+            }
+            else
+                _lastJapanese = (DateTime)await _r.Db(_dbName).Table("Japanese").Get("base").GetField("Last").RunAsync<DateTime>(_conn);
+        }
+
+        public bool CanPostJapanese()
+        {
+            return (DateTime.Now - _lastJapanese).TotalDays > 0;
+        }
+
+        public async Task UpdatePostJapaneseAsync()
+        {
+            _lastJapanese = DateTime.Now;
+            await _r.Db(_dbName).Table("Japanese").Update(_r.HashMap("id", "base")
+                .With("Last", _lastJapanese)
+            ).RunAsync(_conn);
         }
 
         public async Task<List<string>> GetSubredditAsync(string name)
@@ -124,6 +149,7 @@ namespace Kyouka.Database
 
         public Dictionary<string, Score> _scores;
         public Dictionary<string, Subreddit> _subreddits;
+        private DateTime _lastJapanese;
 
         private RethinkDB _r;
         private Connection _conn;
