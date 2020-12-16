@@ -12,6 +12,7 @@ using System.Threading;
 using System.Linq;
 using System.Collections.Generic;
 using System.Web;
+using System.Text;
 
 namespace Kyouka
 {
@@ -44,6 +45,7 @@ namespace Kyouka
             if (json["botToken"] == null)
                 throw new NullReferenceException("Invalid Credentials file");
 
+            InitDicts();
             _jlpt = new Dictionary<int, (string, string)[]>();
             for (int i = 1; i <= 5; i++)
             {
@@ -84,6 +86,104 @@ namespace Kyouka
         private ulong regularRoleId = 692377699402121277;
         private ulong memberRoleId = 599014750306828318;
         private ulong japaneseChannel = 788851808382353488;
+
+
+        public static Dictionary<string, string> HiraganaToRomaji { set; get; } = new Dictionary<string, string>();
+        public static Dictionary<string, string> KatakanaToRomaji { set; get; } = new Dictionary<string, string>();
+
+        private void InitDicts()
+        {
+            var RomajiToHiragana = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText("LanguageResource/Hiragana.json"));
+            foreach (var elem in RomajiToHiragana)
+            {
+                HiraganaToRomaji.Add(elem.Value, elem.Key);
+            }
+            var RomajiToKatakana = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText("LanguageResource/Katakana.json"));
+            foreach (var elem in RomajiToKatakana)
+            {
+                KatakanaToRomaji.Add(elem.Value, elem.Key);
+            }
+        }
+
+        // From: https://github.com/Xwilarg/Sanara/blob/master/SanaraV3/Module/Tool/LanguageModule.cs#L297
+        public static string ConvertLanguage(string entry, Dictionary<string, string> dictionary, char doubleChar)
+        {
+            StringBuilder result = new StringBuilder();
+            var biggest = dictionary.Keys.OrderByDescending(x => x.Length).First().Length;
+            bool isEntryRomaji = IsLatinLetter(dictionary.Keys.First()[0]);
+            bool doubleNext; // If we find a doubleChar, the next character need to be doubled (っこ -> kko)
+            while (entry.Length > 0)
+            {
+                doubleNext = false;
+
+                // SPECIAL CASES FOR KATAKANA
+                if (entry[0] == 'ー') // We can't really convert this katakana so we just ignore it
+                {
+                    entry = entry.Substring(1);
+                    continue;
+                }
+                if (entry[0] == 'ァ' || entry[0] == 'ィ' || entry[0] == 'ゥ' || entry[0] == 'ェ' || entry[0] == 'ォ')
+                {
+                    result.Remove(result.Length - 1, 1);
+                    char tmp;
+                    switch (entry[0])
+                    {
+                        case 'ァ': tmp = 'a'; break;
+                        case 'ィ': tmp = 'i'; break;
+                        case 'ゥ': tmp = 'u'; break;
+                        case 'ェ': tmp = 'e'; break;
+                        case 'ォ': tmp = 'o'; break;
+                        default: throw new ArgumentException("Invalid katakana " + entry[0]);
+                    }
+                    result.Append(tmp);
+                    entry = entry.Substring(1);
+                    continue;
+                }
+
+                if (entry.Length >= 2 && entry[0] == entry[1] && isEntryRomaji) // kko -> っこ
+                {
+                    result.Append(doubleChar);
+                    entry = entry.Substring(1);
+                    continue;
+                }
+                if (entry[0] == doubleChar)
+                {
+                    doubleNext = true;
+                    entry = entry.Substring(1);
+                    if (entry.Length == 0)
+                        continue;
+                }
+                // Iterate on biggest to 1 (We assume that 3 is the max number of character)
+                // We then test for each entry if we can convert
+                // We begin with the biggest, if we don't do so, we would find ん (n) before な (na)
+                for (int i = biggest; i > 0; i--)
+                {
+                    if (entry.Length >= i)
+                    {
+                        var value = entry[0..i];
+                        if (dictionary.ContainsKey(value))
+                        {
+                            if (doubleNext)
+                                result.Append(dictionary[value][0]);
+                            result.Append(dictionary[value]);
+                            entry = entry.Substring(i);
+                            goto found;
+                        }
+                    }
+                }
+                result.Append(entry[0]);
+                entry = entry.Substring(1);
+            found:;
+            }
+            return result.ToString();
+        }
+
+        private static bool IsLatinLetter(char c)
+            => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+
+        public static string ToRomaji(string entry)
+           => ConvertLanguage(ConvertLanguage(entry, KatakanaToRomaji, 'ッ'), HiraganaToRomaji, 'っ');
+
         private void PostJapanese(object? _)
         {
             if (StaticObjects.Db.CanPostJapanese())
@@ -120,6 +220,11 @@ namespace Kyouka
                     Name = "JLPT Level",
                     Value = jlpt,
                     IsInline = true
+                });
+                list.Add(new EmbedFieldBuilder
+                {
+                    Name = "Romaji",
+                    Value = "||" + ToRomaji(randomLine.Item1) + "||"
                 });
                 chan.SendMessageAsync(embed: new EmbedBuilder
                 {

@@ -48,12 +48,14 @@ namespace Kyouka.Database
                 ).RunAsync(_conn);
             }
             else
+            {
                 _lastJapanese = (DateTime)await _r.Db(_dbName).Table("Japanese").Get("base").GetField("Last").RunAsync<DateTime>(_conn);
+            }
         }
 
         public bool CanPostJapanese()
         {
-            return (DateTime.Now - _lastJapanese).TotalDays > 0;
+            return (int)(DateTime.Now - _lastJapanese).TotalDays > 0;
         }
 
         public async Task UpdatePostJapaneseAsync()
