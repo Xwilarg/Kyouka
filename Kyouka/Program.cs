@@ -84,7 +84,7 @@ namespace Kyouka
         {
             checkTimer = new Timer(new TimerCallback(CheckRole), null, 0, 60 * 60 * 1000); // Called every hour
             redditTimer = new Timer(new TimerCallback(CheckSubreddit), null, 0, 600000); // Called every 10 minutes
-            japaneseTimer = new Timer(new TimerCallback(PostJapanese), null, 0, 60 * 60 * 1000); // Called every hour
+            japaneseTimer = new Timer(new TimerCallback(PostJapanese), null, 0, 60000); // Called every minute
         }
 
         private ulong regularRoleId = 692377699402121277;
