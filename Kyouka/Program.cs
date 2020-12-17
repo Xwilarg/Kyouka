@@ -29,6 +29,8 @@ namespace Kyouka
 
         private Dictionary<int, (string, string)[]> _jlpt;
 
+        public string[] JapaneseLines;
+
         private Program()
         {
             Client = new DiscordSocketClient(new DiscordSocketConfig
@@ -57,6 +59,8 @@ namespace Kyouka
                 }).ToArray());
             }
             P = this;
+
+            JapaneseLines = File.ReadAllLines("Data/Japanese.txt");
 
             await _commands.AddModuleAsync<Communication>(null);
             await _commands.AddModuleAsync<Score>(null);
@@ -221,11 +225,16 @@ namespace Kyouka
                     Value = jlpt,
                     IsInline = true
                 });
+                var romaji = ToRomaji(randomLine.Item1);
                 list.Add(new EmbedFieldBuilder
                 {
                     Name = "Romaji",
-                    Value = "||" + ToRomaji(randomLine.Item1) + "||"
+                    Value = "||" + romaji + "||"
                 });
+                var lines = File.ReadAllLines("Data/Japanese.txt").ToList();
+                lines.Add(DateTime.Now.ToString("yyyy/MM/dd") + "$" + randomLine.Item1 + "$" + romaji);
+                JapaneseLines = lines.ToArray();
+                File.WriteAllLines("Data/Japanese.txt", lines.ToArray());
                 chan.SendMessageAsync(embed: new EmbedBuilder
                 {
                     Color = Color.Blue,
