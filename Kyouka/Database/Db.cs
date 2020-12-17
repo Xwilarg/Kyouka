@@ -55,7 +55,7 @@ namespace Kyouka.Database
 
         public bool CanPostJapanese()
         {
-            return (int)(DateTime.Now - _lastJapanese).TotalDays > 0;
+            return DateTime.Now.Day != _lastJapanese.Day;
         }
 
         public async Task UpdatePostJapaneseAsync()
