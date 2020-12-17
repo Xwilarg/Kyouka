@@ -13,6 +13,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Web;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Kyouka
 {
@@ -211,6 +212,7 @@ namespace Kyouka
                 var chan = g.GetTextChannel(japaneseChannel);
 
                 var slug = data["slug"].Value<string>();
+                slug = Regex.Replace(slug, "-[0-9]+", "");
                 var list = new List<EmbedFieldBuilder>();
                 if (randomLine.Item1 != slug)
                     list.Add(new EmbedFieldBuilder
@@ -239,6 +241,7 @@ namespace Kyouka
                 {
                     Color = Color.Blue,
                     Title = randomLine.Item1,
+                    Url = "https://jisho.org/word/" + slug,
                     Description = randomLine.Item2,
                     Fields = list
                 }.Build());
