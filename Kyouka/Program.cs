@@ -31,6 +31,7 @@ namespace Kyouka
         private Dictionary<int, (string, string)[]> _jlpt;
 
         public string[] JapaneseLines;
+        public (string, string)[] JapaneseSentences;
 
         private Program()
         {
@@ -62,6 +63,13 @@ namespace Kyouka
             P = this;
 
             JapaneseLines = File.ReadAllLines("Data/Japanese.txt");
+            var lines = File.ReadAllLines("Data/Sentences.txt");
+            JapaneseSentences = new (string, string)[lines.Length / 2];
+            for (int i = 0; i < lines.Length; i += 2)
+            {
+                var curr = lines[i].Split('\t');
+                JapaneseSentences[i / 2] = (curr[0].Replace("A: ", ""), curr[1].Split('#')[0]);
+            }
 
             await _commands.AddModuleAsync<Communication>(null);
             await _commands.AddModuleAsync<Score>(null);
@@ -213,6 +221,16 @@ namespace Kyouka
 
                 var slug = data["slug"].Value<string>();
                 slug = Regex.Replace(slug, "-[0-9]+", "");
+
+                List<(string, string)> examples = new List<(string, string)>();
+                var valids = JapaneseSentences.Where(x => x.Item1.Contains(slug)).ToList();
+                while (valids.Count > 0 && examples.Count < 5)
+                {
+                    var random = StaticObjects.Rand.Next(valids.Count);
+                    examples.Add(valids[random]);
+                    valids.RemoveAt(random);
+                }
+
                 var list = new List<EmbedFieldBuilder>();
                 if (randomLine.Item1 != slug)
                     list.Add(new EmbedFieldBuilder
@@ -231,8 +249,19 @@ namespace Kyouka
                 list.Add(new EmbedFieldBuilder
                 {
                     Name = "Romaji",
-                    Value = "||" + romaji + "||"
+                    Value = "||" + romaji + "||",
+                    IsInline = true
                 });
+                int index = 1;
+                foreach (var e in examples)
+                {
+                    list.Add(new EmbedFieldBuilder
+                    {
+                        Name = "Example n°" + index,
+                        Value = e.Item1 + "\n||" + e.Item2 + "||"
+                    });
+                    index++;
+                }
                 var lines = File.ReadAllLines("Data/Japanese.txt").ToList();
                 lines.Add(DateTime.Now.ToString("yyyy/MM/dd") + "$" + randomLine.Item1 + "$" + romaji);
                 JapaneseLines = lines.ToArray();
