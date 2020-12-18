@@ -203,10 +203,10 @@ namespace Kyouka
             {
                 var nb = StaticObjects.Rand.Next(100);
                 int jlpt;
-                if (nb < 50) jlpt = 5;
-                else if (nb < 25) jlpt = 4;
-                else if (nb < 15) jlpt = 3;
-                else if (nb < 10) jlpt = 2;
+                if (nb > 50) jlpt = 5;
+                else if (nb > 25) jlpt = 4;
+                else if (nb > 15) jlpt = 3;
+                else if (nb > 10) jlpt = 2;
                 else jlpt = 1;
 
                 var content = _jlpt[jlpt];
