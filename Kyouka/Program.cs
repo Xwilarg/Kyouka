@@ -76,6 +76,7 @@ namespace Kyouka
             await _commands.AddModuleAsync<Debug>(null);
 
             Client.MessageReceived += HandleCommandAsync;
+            Client.ReactionAdded += ReactionAdded;
             Client.GuildAvailable += GuildAvailable;
             Client.Connected += Connected;
 
@@ -318,6 +319,7 @@ namespace Kyouka
             { "rance", 783754331554840616 },
             { "showerthoughts", 784432835880026113 },
             { "technicallythetruth", 784433010048630804 },
+            { "tf2", 791816386640740353 },
             { "upliftingnews", 788486214873120860 },
             { "yuriknights", 782543062802497536 },
             { "wholesomehentai", 782543100462497793 },
@@ -397,11 +399,27 @@ namespace Kyouka
             });
         }
 
+        private async Task ReactionAdded(Cacheable<IUserMessage, ulong> msg, ISocketMessageChannel chan, SocketReaction react)
+        {
+            if (chan.Id == 792385634827501579 && !(react.User.Value as IGuildUser).RoleIds.Any(x => x == 599027313576771584))
+                await(react.User.Value as IGuildUser).BanAsync(reason: "Didn't follow the rules of dot channel");
+        }
+
         private async Task HandleCommandAsync(SocketMessage arg)
         {
             SocketUserMessage msg = arg as SocketUserMessage;
             if (msg == null) return;
             int pos = 0;
+            if (msg.Channel.Id == 792385634827501579) // Dot channel
+            {
+                // Is NOT admin
+                // AND (msg is not a dot or msg contains an attachment)
+                if (!(msg.Author as IGuildUser).RoleIds.Any(x => x == 599027313576771584) && (msg.Content != "." || msg.Attachments.Count > 0))
+                {
+                    await (msg.Author as IGuildUser).BanAsync(reason: "Didn't follow the rules of dot channel");
+                }
+                return;
+            }
             if (!arg.Author.IsBot && (msg.HasMentionPrefix(Client.CurrentUser, ref pos) || msg.HasStringPrefix("k.", ref pos)))
             {
                 SocketCommandContext context = new SocketCommandContext(Client, msg);
