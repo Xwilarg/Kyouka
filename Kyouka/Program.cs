@@ -417,8 +417,9 @@ namespace Kyouka
                 if (!(msg.Author as IGuildUser).RoleIds.Any(x => x == 599027313576771584) && (msg.Content != "." || msg.Attachments.Count > 0))
                 {
                     await (msg.Author as IGuildUser).BanAsync(reason: "Didn't follow the rules of dot channel");
+                    return;
                 }
-                return;
+                await (msg.Author as IGuildUser).AddRoleAsync((msg.Author as IGuildUser).Guild.GetRole(692377699402121277));
             }
             if (!arg.Author.IsBot && (msg.HasMentionPrefix(Client.CurrentUser, ref pos) || msg.HasStringPrefix("k.", ref pos)))
             {
