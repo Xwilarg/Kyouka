@@ -76,7 +76,6 @@ namespace Kyouka
             await _commands.AddModuleAsync<Debug>(null);
 
             Client.MessageReceived += HandleCommandAsync;
-            Client.ReactionAdded += ReactionAdded;
             Client.GuildAvailable += GuildAvailable;
             Client.Connected += Connected;
 
@@ -313,10 +312,8 @@ namespace Kyouka
             { "kdrama", 782542808354521129 },
             { "kpop", 782413900367790091 },
             { "markiplier", 788487021193855006 },
-            { "nextfuckinglevel", 784434309121310720 },
             { "programmerhumor", 784433512362016860 },
             { "rainbow6", 783754266644840538 },
-            { "rance", 783754331554840616 },
             { "showerthoughts", 784432835880026113 },
             { "technicallythetruth", 784433010048630804 },
             { "tf2", 791816386640740353 },
@@ -399,28 +396,11 @@ namespace Kyouka
             });
         }
 
-        private async Task ReactionAdded(Cacheable<IUserMessage, ulong> msg, ISocketMessageChannel chan, SocketReaction react)
-        {
-            if (chan.Id == 792385634827501579 && !(react.User.Value as IGuildUser).RoleIds.Any(x => x == 599027313576771584))
-                await(react.User.Value as IGuildUser).BanAsync(reason: "Didn't follow the rules of dot channel");
-        }
-
         private async Task HandleCommandAsync(SocketMessage arg)
         {
             SocketUserMessage msg = arg as SocketUserMessage;
             if (msg == null) return;
             int pos = 0;
-            if (msg.Channel.Id == 792385634827501579) // Dot channel
-            {
-                // Is NOT admin
-                // AND (msg is not a dot or msg contains an attachment)
-                if (!(msg.Author as IGuildUser).RoleIds.Any(x => x == 599027313576771584) && (msg.Content != "." || msg.Attachments.Count > 0))
-                {
-                    await (msg.Author as IGuildUser).BanAsync(reason: "Didn't follow the rules of dot channel");
-                    return;
-                }
-                await (msg.Author as IGuildUser).AddRoleAsync((msg.Author as IGuildUser).Guild.GetRole(692377699402121277));
-            }
             if (!arg.Author.IsBot && (msg.HasMentionPrefix(Client.CurrentUser, ref pos) || msg.HasStringPrefix("k.", ref pos)))
             {
                 SocketCommandContext context = new SocketCommandContext(Client, msg);
