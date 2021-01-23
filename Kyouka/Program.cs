@@ -74,6 +74,7 @@ namespace Kyouka
             await _commands.AddModuleAsync<Communication>(null);
             await _commands.AddModuleAsync<Score>(null);
             await _commands.AddModuleAsync<Debug>(null);
+            await _commands.AddModuleAsync<Module.Game>(null);
 
             Client.MessageReceived += HandleCommandAsync;
             Client.GuildAvailable += GuildAvailable;
@@ -263,7 +264,8 @@ namespace Kyouka
                     index++;
                 }
                 var lines = File.ReadAllLines("Data/Japanese.txt").ToList();
-                lines.Add(DateTime.Now.ToString("yyyy/MM/dd") + "$" + randomLine.Item1 + "$" + romaji);
+                if (!lines.Any(x => x.Split('$')[1] == randomLine.Item1))
+                    lines.Add(DateTime.Now.ToString("yyyy/MM/dd") + "$" + randomLine.Item1 + "$" + randomLine.Item2 + "$" + (randomLine.Item1 != slug ? slug : ""));
                 JapaneseLines = lines.ToArray();
                 File.WriteAllLines("Data/Japanese.txt", lines.ToArray());
                 chan.SendMessageAsync(embed: new EmbedBuilder
