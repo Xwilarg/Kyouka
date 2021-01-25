@@ -21,16 +21,27 @@ namespace Kyouka.Module
                 Questions = data.Select((x) =>
                 {
                     var split = x.Split('$');
-                    string question;
-                    if (split[3] != "")
-                        question = split[3] + " (" + split[1] + ")";
-                    else
-                        question = split[1];
-                    return new CustomQuestion
+                    if (StaticObjects.Rand.Next(0, 2) == 0)
                     {
-                        Question = question,
-                        Answers = split[2].Split(',').Select(x => x.Trim('"')).ToArray()
-                    };
+                        string question;
+                        if (split[3] != "")
+                            question = split[3] + " (" + split[1] + ")";
+                        else
+                            question = split[1];
+                        return new CustomQuestion
+                        {
+                            Question = question,
+                            Answers = split[2].Split(',').Select(x => x.Trim('"')).ToArray()
+                        };
+                    }
+                    else
+                    {
+                        return new CustomQuestion
+                        {
+                            Question = split[2],
+                            Answers = new[] { split[1], Program.ToRomaji(split[1]) }
+                        };
+                    }
                 }).ToArray()
             };
             byte[] arr = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(game));
