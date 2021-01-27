@@ -1,6 +1,7 @@
 ﻿using Discord.Commands;
 using Kyouka.Game;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -36,10 +37,13 @@ namespace Kyouka.Module
                     }
                     else
                     {
+                        var answers = new List<string> { split[1], Program.ToRomaji(split[1]) };
+                        if (split[3] != "")
+                            answers.Add(split[3]);
                         return new CustomQuestion
                         {
                             Question = split[2],
-                            Answers = new[] { split[1], Program.ToRomaji(split[1]) }
+                            Answers = answers.ToArray()
                         };
                     }
                 }).ToArray()
