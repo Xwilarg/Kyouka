@@ -100,6 +100,7 @@ namespace Kyouka
         private ulong regularRoleId = 692377699402121277;
         private ulong memberRoleId = 599014750306828318;
         private ulong japaneseChannel = 788851808382353488;
+        private ulong wordChannel = 821414470836420679;
 
 
         public static Dictionary<string, string> HiraganaToRomaji { set; get; } = new Dictionary<string, string>();
@@ -200,6 +201,23 @@ namespace Kyouka
 
         private void PostJapanese(object? _)
         {
+            if (StaticObjects.Db.CanPostWord())
+            {
+
+                var g = Client.Guilds.ElementAt(0);
+                var chan = g.GetTextChannel(wordChannel);
+
+                var lines = File.ReadAllLines("Data/words.txt");
+                var random = lines[StaticObjects.Rand.Next(lines.Length)];
+
+                chan.SendMessageAsync(embed: new EmbedBuilder
+                {
+                    Title = random,
+                    Color = Color.Blue
+                }.Build()).GetAwaiter().GetResult();
+
+                StaticObjects.Db.UpdatePostWordAsync().GetAwaiter().GetResult();
+            }
             if (StaticObjects.Db.CanPostJapanese())
             {
                 var nb = StaticObjects.Rand.Next(100);

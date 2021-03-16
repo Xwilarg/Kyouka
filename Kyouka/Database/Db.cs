@@ -29,6 +29,8 @@ namespace Kyouka.Database
                 _r.Db(_dbName).TableCreate("Reddit").Run(_conn);
             if (!await _r.Db(_dbName).TableList().Contains("Japanese").RunAsync<bool>(_conn))
                 _r.Db(_dbName).TableCreate("Japanese").Run(_conn);
+            if (!await _r.Db(_dbName).TableList().Contains("Word").RunAsync<bool>(_conn))
+                _r.Db(_dbName).TableCreate("Word").Run(_conn);
 
             _scores = new Dictionary<string, Score>();
             var tmp = (Cursor<Score>)await _r.Db(_dbName).Table("Scores").RunAsync<Score>(_conn);
@@ -51,6 +53,18 @@ namespace Kyouka.Database
             {
                 _lastJapanese = (DateTime)await _r.Db(_dbName).Table("Japanese").Get("base").GetField("Last").RunAsync<DateTime>(_conn);
             }
+
+            if (await _r.Db(_dbName).Table("Word").GetAll("base").Count().Eq(0).RunAsync<bool>(_conn))
+            {
+                _lastWord = DateTime.MinValue;
+                await _r.Db(_dbName).Table("Word").Insert(_r.HashMap("id", "base")
+                    .With("Last", DateTime.MinValue)
+                ).RunAsync(_conn);
+            }
+            else
+            {
+                _lastWord = (DateTime)await _r.Db(_dbName).Table("Word").Get("base").GetField("Last").RunAsync<DateTime>(_conn);
+            }
         }
 
         public bool CanPostJapanese()
@@ -58,11 +72,24 @@ namespace Kyouka.Database
             return DateTime.Now.Day != _lastJapanese.Day;
         }
 
+        public bool CanPostWord()
+        {
+            return DateTime.Now.Day != _lastWord.Day;
+        }
+
         public async Task UpdatePostJapaneseAsync()
         {
             _lastJapanese = DateTime.Now;
             await _r.Db(_dbName).Table("Japanese").Update(_r.HashMap("id", "base")
                 .With("Last", _lastJapanese)
+            ).RunAsync(_conn);
+        }
+
+        public async Task UpdatePostWordAsync()
+        {
+            _lastWord = DateTime.Now;
+            await _r.Db(_dbName).Table("Word").Update(_r.HashMap("id", "base")
+                .With("Last", _lastWord)
             ).RunAsync(_conn);
         }
 
@@ -151,7 +178,7 @@ namespace Kyouka.Database
 
         public Dictionary<string, Score> _scores;
         public Dictionary<string, Subreddit> _subreddits;
-        private DateTime _lastJapanese;
+        private DateTime _lastJapanese, _lastWord;
 
         private RethinkDB _r;
         private Connection _conn;
